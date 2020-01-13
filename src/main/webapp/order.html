@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="/js/bootstrap3/css/bootstrap.css" rel="stylesheet">
+    <link href="/js/bootstrap3/css/bootstrap-theme.css" rel="stylesheet">
+    <link href="/js/bootstrap-datetimepicker/css/bootstrap-datetimepicker.css" rel="stylesheet">
+    <link rel="stylesheet" href="/js/DataTables/DataTables-1.10.18/css/dataTables.bootstrap.css">
+    <script src="/js/jquery-3.3.1.min.js"></script>
+    <script src="/js/bootstrap3/js/bootstrap.js"></script>
+    <script src="/js/DataTables/DataTables-1.10.18/js/jquery.dataTables.js"></script>
+    <script src="/js/DataTables/DataTables-1.10.18/js/dataTables.bootstrap.js"></script>
+    <script src="/js/bootstrap-datetimepicker/js/moment-with-locales.js"></script>
+    <script src="/js/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js"></script>
+    <script src="/js/bootbox/bootbox.min.js"></script>
+    <script src="/js/fileinput5/js/fileinput.js"></script>
+    <script src="/js/fileinput5/js/locales/zh.js"></script>
+    <link rel="stylesheet" href="/js/fileinput5/css/fileinput.css">
+    <link rel="stylesheet" href="/js/bootstrap-validator/css/bootstrapValidator.min.css">
+    <script src="/js/bootstrap-validator/js/bootstrapValidator.min.js"></script>
+    <script src="/js/bootstrap-validator/js/language/zh_CN.js"></script>
+</head>
+<script type="text/html" id="addDrug"
+        9>
+    <div>
+        <form class="form-horizontal" id="formApp" >
+
+            <div class="form-group">
+                <label  class="col-sm-2 control-label">商品名称</label>
+                <div class="col-sm-4" id="xizh">
+                </div>
+            </div>
+
+
+            <div class="form-group">
+                <label  class="col-sm-2 control-label">购买数量</label>
+                <div class="col-sm-4">
+                    <input class="form-control" id="add_shu" onblur="gaishu()" ></input>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label  class="col-sm-2 control-label">商品价钱</label>
+                <div class="col-sm-4">
+                    <input class="form-control" id="add_price" readonly></input>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label  class="col-sm-2 control-label">小计金额</label>
+                <div class="col-sm-4">
+                    <input class="form-control" id="add_xiaoji" readonly></input>
+                </div>
+            </div>
+        </form>
+
+    </div>
+
+</script>
+<script type="text/html" id="updateDrug"
+        9>
+    <div>
+        <form class="form-horizontal" id="formApp1" >
+            <div class="form-group">
+                <label  class="col-sm-2 control-label">商品名称</label>
+                <div class="col-sm-4" id="up_brand">
+
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label  class="col-sm-2 control-label">商品价钱</label>
+                <div class="col-sm-4">
+                    <input class="form-control" id="up_price" readonly></input>
+                </div>
+            </div>
+
+
+            <div class="form-group">
+                <label  class="col-sm-2 control-label">购买数量</label>
+                <div class="col-sm-4">
+                    <input class="form-control" id="up_shu" onblur="gaishu2()"></input>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label  class="col-sm-2 control-label">小计金额</label>
+                <div class="col-sm-4">
+                    <input class="form-control" id="up_xiaoji" readonly></input>
+                </div>
+            </div>
+
+        </form>
+
+    </div>
+
+</script>
+<script type="text/javascript">
+    $(function () {
+        initDataTable();
+        initAddBrandList1();
+    });
+    function initDataTable(){
+        $('#example').DataTable({
+            "destroy": true,//retrieve: true表示我已经知道初始化选项不能在初始化之后更改，只是希望返回DataTable实例。
+            "pagingType":"simple_numbers",
+            "lengthMenu": [[ 4, 6,9], [4, 6,9]],
+            "serverSide": true,
+            "ordering": false, // 禁止排序
+            "searching": false,//启用搜索功能
+            "ajax": {
+                url: 'http://localhost:8088/order/queryOrderList.action',
+                type: 'POST',
+                "data":function (d) {
+                    d.minPrice=$("#minPrice").val();
+                    d.maxPrice=$("#maxPrice").val();
+                    d.brandId=$("#q_proId").val();
+                },
+                "dataSrc":function (f) {
+                    if(f.status==200){
+                        f.draw =f.data.draw;
+                        f.recordsTotal=f.data.recordsTotal;
+                        f.recordsFiltered=f.data.recordsFiltered;
+                        return f.data.data;
+                    }else{
+                        return "";
+                    }
+                },
+            },
+            "columns": [
+                {"data": "id"},
+                {"data": "proName"},
+                {"data": "price"},
+                {"data": "shu"},
+                {"data": "xiaoji"},
+                {"data":"id",render:function(data,type,row,meta){
+                        var b="";
+                        b+= ' <div class="btn-group" role="group" aria-label="...">'+
+                            '<button type="button" class="btn btn-info" onclick="toUpdate('+data+')"><i class="glyphicon glyphicon-wrench"></i>修改</button>'+
+                            '<button type="button" class="btn btn-danger" onclick="del('+data+')"><i class="glyphicon glyphicon-remove"></i>删除</button>'+
+                            '</div>';
+                        return b;
+                    }}
+            ],
+            language: {
+                "sProcessing": "处理中...",
+                "sLengthMenu": "显示 _MENU_ 项结果",
+                "sZeroRecords": "没有匹配结果",
+                "sInfo": "显示第 _START_ 至 _END_ 项结果，共 _TOTAL_ 项",
+                "sInfoEmpty": "显示第 0 至 0 项结果，共 0 项",
+                "sInfoFiltered": "(由 _MAX_ 项结果过滤)",
+                "sInfoPostFix": "",
+                "sSearch": "搜索:",
+                "sUrl": "",
+                "sEmptyTable": "表中数据为空",
+                "sLoadingRecords": "载入中...",
+                "sInfoThousands": ",",
+                "oPaginate": {
+                    "sFirst": "首页",
+                    "sPrevious": "上页",
+                    "sNext": "下页",
+                    "sLast": "末页"
+                },
+                "oAria": {
+                    "sSortAscending": ": 以升序排列此列",
+                    "sSortDescending": ": 以降序排列此列"
+                }
+            }
+        });
+    }
+    function toUpdate(id) {
+        window.event.stopPropagation();// 阻止冒泡
+        bootbox.dialog({
+            message: $("#updateDrug").html(),
+            title: "修改",
+            size: "large",
+            buttons: {
+                Cancel: {
+                    label: "取消",
+                    className: "btn-default",
+                    callback: function () {
+                    }
+                }
+                , OK: {
+                    label: "确认",
+                    className: "btn-danger",
+                    callback: function () {
+                        var param = {};
+                        param.proID= $("#up1_brand").val();
+                        param.price=$("#up_price").val();
+                        param.shu=$("#up_shu").val();
+                        param.xiaoji=$("#up_xiaoji").val();
+                        param.del=0;
+                        param.id = id;
+                        $.post(
+                            "http://localhost:8088/order/updateOrder.action",
+                            param,
+                            function (data) {
+                                if (data.status == 200) {
+                                    queryList();
+                                } else {
+                                    bootbox.alert("操作失败！,请联系管理员", function () {
+
+                                    })
+                                }
+
+                            }
+                        )
+                    }
+                }
+            }
+        });
+        //初始化品牌
+        upBrandList();
+        $.post(
+            "http://localhost:8088/order/queryOrderById.action",
+            {"id":id},
+            function (result) {
+                if(result.status==200){
+                    var datas=result.data;
+                    $("#up1_brand").val(datas.proID);
+                    $("#up_price").val(datas.price);
+                    $("#up_shu").val(datas.shu);
+                    $("#up_xiaoji").val(datas.xiaoji);
+                }
+            }
+        )
+    }
+
+    function queryList(){
+        $("#example").dataTable().fnDraw(false);//点击事件触发table重新请求服务器
+    }
+    function initAddBrandList1() {
+        $.ajaxSettings.async = false;
+        $.post(
+            "http://localhost:8088/order/queryProduct.action",
+            function (result) {
+                if(result.status==200){
+                    var data=result.data;
+                    for (var i = 0; i < data.length; i++) {
+                        $("#q_proId").append(
+                            "<option value='"+data[i].id+"'>"+data[i].proName+"</option>"
+                        );
+                    }
+                }
+            }
+        )
+    }
+    //新增品牌类型
+    function initAddBrandList() {
+        $.ajaxSettings.async = false;
+        $.post(
+            "http://localhost:8088/order/queryProduct.action",
+            function (result) {
+                if(result.status==200){
+                    var data=result.data;
+                    var str='';
+                    str+=' <select class="form-control"  id="add_brand" onchange="gai1(this.value)">\n' +
+                        '                        <option value="-1">==请选择==</option>'
+                    for (var i = 0; i < data.length; i++) {
+                           str+= "<option value='"+data[i].id+"'>"+data[i].proName+"</option>"
+                    }
+                    str+='</select>';
+                }
+                $("#xizh").append(str)
+            }
+        )
+    }
+    function gaishu() {
+        var shu = $("#add_shu").val();
+        var price = $("#add_price").val();
+        var xiaoji=shu*price;
+        $("#add_xiaoji").val(xiaoji);
+    }
+    function gaishu2() {
+        var shu = $("#up_shu").val();
+        var price = $("#up_price").val();
+        var xiaoji=shu*price;
+        $("#up_xiaoji").val(xiaoji);
+    }
+    function gai1(id) {
+        $.post(
+            "http://localhost:8088/order/queryprice.action",
+            {"id":id},
+            function (da) {
+                var data=da.data;
+                $("#add_price").val(data.price);
+            }
+        )
+    }
+    function gai2(id) {
+        $("#up_shu").val("");
+        $("#up_xiaoji").val("");
+        $.post(
+            "http://localhost:8088/order/queryprice.action",
+            {"id":id},
+            function (da) {
+                var data=da.data;
+                $("#up_price").val(data.price);
+            }
+        )
+    }
+    //修改品牌类型
+    function upBrandList() {
+        $.ajaxSettings.async = false;
+        $.post(
+            "http://localhost:8088/order/queryProduct.action",
+            function (result) {
+                if(result.status==200){
+                    var data=result.data;
+                    var str='';
+                    str+=' <select class="form-control"  id="up1_brand" onchange="gai2(this.value)">\n' +
+                        '                        <option value="-1">==请选择==</option>'
+                    for (var i = 0; i < data.length; i++) {
+                        str+= "<option value='"+data[i].id+"'>"+data[i].proName+"</option>"
+                    }
+                    str+='</select>';
+                }
+                $("#up_brand").append(str)
+            }
+        )
+    }
+    //删除
+    function del(id) {
+        var a=1;
+        window.event.stopPropagation();// 阻止冒泡
+        bootbox.dialog({
+            // dialog的内容
+            message: "确定要删除该数据吗？？？",
+
+            // dialog的标题
+            title: "系统温馨提示😊：",
+
+            // 退出dialog时的回调函数，包括用户使用ESC键及点击关闭
+            onEscape: function() {},
+
+            // 是否显示此dialog，默认true
+            show: true,
+
+            // 是否显示body的遮罩，默认true
+            backdrop: true,
+
+            // 是否显示关闭按钮，默认true
+            closeButton: true,
+
+            // 是否动画弹出dialog，IE10以下版本不支持
+            animate: true,
+
+            // dialog的类名
+            className: "my-modal",
+
+            // dialog底端按钮配置
+            buttons: {
+
+                // 其中一个按钮配置
+                success: {
+                    // 按钮显示的名称
+                    label: "确定!",
+
+                    // 按钮的类名
+                    className: "btn-success",
+
+                    // 点击按钮时的回调函数
+                    callback: function() {
+                        $.post(
+                            "http://localhost:8088/order/delOrderId.action",
+                            {"id":id,"del":a},
+                            function (data) {
+                                if(data.status==200){
+                                    queryList();
+                                }else {
+                                    bootbox.confirm({
+                                        size: "small",
+                                        message: "删除失败",
+                                        callback: function(result){ /* result is a boolean; true = OK, false = Cancel*/ }
+                                    });
+                                }
+
+                            }
+                        )
+                    }
+                },
+
+                // 另一个按钮配置
+                "Danger!": {
+                    className: "btn-danger",
+                    label: "取消",
+                    callback: function() {}
+                }
+            }
+        });
+    }
+    //增加
+    function addDrug(){
+        bootbox.dialog({
+            message: $("#addDrug").html(),
+            title: "添加",
+            size:"large",
+            buttons: {
+                Cancel: {
+                    label: "取消",
+                    className: "btn-default",
+                    callback: function () {
+                    }
+                }
+                , OK: {
+                    label: "确认",
+                    className: "btn-danger",
+                    callback: function () {
+                        var param={};
+                        param.proID=$("#add_brand").val();
+                        param.price=$("#add_price").val();
+                        param.shu=$("#add_shu").val();
+                        param.xiaoji=$("#add_xiaoji").val();
+                        param.del=0
+                        $.post(
+                            "http://localhost:8088/order/addOrder.action",
+                            param,
+                            function (data) {
+                                if(data.status==200){
+                                    queryList();
+                                }else{
+                                    bootbox.alert("操作失败！,请联系管理员",function(){
+
+                                    })
+                                }
+
+                            }
+                        )
+                    }
+                }
+            }
+        });
+        initAddBrandList();
+    }
+</script>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+
+            <form class="form-horizontal" id="aaa">
+                <div class="form-group">
+
+
+                    <label class="col-sm-2 control-label">商品价格</label>
+                    <div class="col-sm-4">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="minPrice" name="minPrice" aria-describedby="basic-addon1">
+                            <span class="input-group-addon"><i class="glyphicon glyphicon-resize-horizontal"></i></span>
+                            <input type="text" class="form-control" id="maxPrice" name="maxPrice" aria-describedby="basic-addon1">
+                        </div>
+                    </div>
+
+                    <label class="col-sm-2 control-label">商品名称</label>
+                    <div class="col-sm-2">
+                        <select class="form-control" id="q_proId">
+                            <option value="-1">==请选择==</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-offset-5 col-sm-10">
+                            <div class="btn-group btn-group-lg" role="group" aria-label="...">
+                                <button type="button" class="btn btn-primary" onclick="queryList()">提交</button>
+                                <button type="reset" class="btn btn-danger">重置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <button type="button" class="btn btn-info btn-lg glyphicon" onclick="addDrug()" >新增订单</button>
+                </div>
+                <div class="panel-body">
+                    <div class="bs-example" data-example-id="bordered-table">
+                        <table class="table table-striped table-bordered" id="example" style="width:100%">
+                            <thead>
+                            <tr>
+                                <td>订单号</td>
+                                <td>商品名称</td>
+                                <td>商品价格</td>
+                                <td>购买数量</td>
+                                <td>小计</td>
+                                <td>操作</td>
+                            </tr>
+                            </thead>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
